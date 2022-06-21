@@ -390,7 +390,7 @@ bond_max = 9
 MAX_NB_WORDS = 23
 MAX_SEQUENCE_LENGTH = 35
 
-epochs = 5
+epochs = 20
 batch_size = 64
 batches = y_train.shape[0] // batch_size
 threshold = 0.3 # defining accurate samples
@@ -646,10 +646,8 @@ discriminator.save('./../data/nns_9HA_noemb_6b6/discriminator_new.h5')
 
 # Generation Study
 
-#regressor = load_model('regressor.h5')
-#regressor_top = load_model('regressor_top.h5')
-#generator = load_model    ('./../data/nns_9HA_noemb_6b6/generator_new.h5')
-#discriminator = load_model('./../data/nns_9HA_noemb_6b6/discriminator_new.h5')
+generator = load_model    ('./../data/nns_9HA_noemb_6b6/generator_new.h5')
+discriminator = load_model('./../data/nns_9HA_noemb_6b6/discriminator_new.h5')
 
 encoder = load_model('./../data/nns_9HA_noemb_6b6/encoder_newencinp.h5')
 decoder = load_model('./../data/nns_9HA_noemb_6b6/decoder_newencinp.h5')
@@ -743,7 +741,7 @@ for hc in pbar(range(n_sample)):
             #m = Chem.MolFromSmiles(smiles[:-1],sanitize=False)
             m = Chem.MolFromSmiles(smiles[:-1])
             if m is not None:
-                if len(construct_atomic_number_array(m)) <= 9:
+                if len(construct_atomic_number_array(m)) <= 12:
                     idx.append(i)
 
         idx = np.array(idx)
