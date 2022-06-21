@@ -36,7 +36,7 @@ from chainer_chemistry.datasets.numpy_tuple_dataset import NumpyTupleDataset
 from chainer_chemistry.dataset.preprocessors import GGNNPreprocessor
 
 # load the generated SMILES from the RCGAN Model
-csv_name = './../experiments/regular_9HA_6b6latent/Regular_NODUP_noscreen.csv'
+csv_name = './../experiments/regular_9HA_6b6latent/Regular_noscreen.csv'
 gen_SMILES = pd.read_csv(csv_name)
 
 # pick the samples with available Joback values
@@ -267,11 +267,12 @@ print ("mean of rel diff BW Predicted (from regresor) and cv from qm9: {}".
 
 # plot the error bars <10%, <20%
 re_less_10 = np.sum(gen_SMILES['Err_pred_des'].values <= 0.1)
-print ('less than 10 % ', re_less_10, 'from total ', gen_SMILES.shape[0])
+print ('less than 10 % ', re_less_10, 
+        'from total ', gen_SMILES.shape[0], re_less_10/gen_SMILES.shape[0], '%')
 re_less_20_big_10 = np.sum( (gen_SMILES['Err_pred_des'].values > 0.1) &  (gen_SMILES['Err_pred_des'].values <= 0.2) )
-print ('less than 20 larger than 10% ', re_less_20_big_10, 'from total ', gen_SMILES.shape[0])
+print ('less than 20 larger than 10% ', re_less_20_big_10, 'from total ', gen_SMILES.shape[0], re_less_20_big_10/gen_SMILES.shape[0], '%')
 re_big_20 = np.sum(gen_SMILES['Err_pred_des'].values > 0.2)
-print ('larger than 20 % ', re_big_20, 'from total ', gen_SMILES.shape[0])
+print ('larger than 20 % ', re_big_20, 'from total ', gen_SMILES.shape[0], re_big_20/gen_SMILES.shape[0], '%')
 print ('total: ', re_less_10 + re_less_20_big_10 + re_big_20)
 """
 plt.close()

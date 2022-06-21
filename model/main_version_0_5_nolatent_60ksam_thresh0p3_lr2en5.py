@@ -378,8 +378,8 @@ combined = build_combined(z, y,
 # loading pretrained models
 regressor = load_model    ('./../data/nns_9HA_noemb_6b6/regressor.h5')
 regressor_top = load_model('./../data/nns_9HA_noemb_6b6/regressor_top.h5')
-#generator = load_model    ('./../data/nns_9HA_noemb_6b6/generator.h5')
-#discriminator= load_model ('./../data/nns_9HA_noemb_6b6/discriminator.h5')
+generator = load_model    ('./../data/nns_9HA_noemb_6b6/generator_new.h5')
+discriminator= load_model ('./../data/nns_9HA_noemb_6b6/discriminator_new.h5')
 
 regressor_top.trainable = False
 regressor.trainable = False
@@ -390,7 +390,7 @@ bond_max = 9
 MAX_NB_WORDS = 23
 MAX_SEQUENCE_LENGTH = 35
 
-epochs = 400 
+epochs = 5
 batch_size = 64
 batches = y_train.shape[0] // batch_size
 threshold = 0.3 # defining accurate samples
