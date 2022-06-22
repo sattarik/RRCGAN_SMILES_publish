@@ -666,8 +666,8 @@ decoder = load_model('./../data/nns_9HA_noemb_6b6/decoder_newencinp.h5')
 # Generate 500 different values of heat capacities
 """
 from progressbar import ProgressBar
-N = 50
-n_sample = 200
+N = 20
+n_sample = 150
 
 gen_error = []
 gen_smiles = []
@@ -744,7 +744,7 @@ for hc in pbar(range(n_sample)):
             #m = Chem.MolFromSmiles(smiles[:-1], sanitize=False)
             m = Chem.MolFromSmiles(smiles[:-1], sanitize=True)
             if m is not None:
-                if len(construct_atomic_number_array(m)) <= 12:
+                if len(construct_atomic_number_array(m)) <= 9:
                     idx.append(i)
 
         idx = np.array(idx)
