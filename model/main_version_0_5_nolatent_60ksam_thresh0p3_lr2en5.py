@@ -270,8 +270,8 @@ atoms_embedding, bonds_embedding, _ = encoder.predict([X_smiles_train])
 atoms_val, bonds_val, _ = encoder.predict([X_smiles_val])
 
 #try:
-regressor =     load_model('./../data/nns_9HA_noemb_6b6/regressor_keep.h5')
-regressor_top = load_model('./../data/nns_9HA_noemb_6b6/regressor_top_keep.h5')
+regressor =     load_model('./../data/nns_9HA_noemb_6b6/regressor.h5')
+regressor_top = load_model('./../data/nns_9HA_noemb_6b6/regressor_top.h5')
 print (".h5 was read")
 """
 except:
@@ -380,8 +380,8 @@ combined = build_combined(z, y,
 # loading pretrained models
 regressor = load_model    ('./../data/nns_9HA_noemb_6b6/regressor.h5')
 regressor_top = load_model('./../data/nns_9HA_noemb_6b6/regressor_top.h5')
-generator = load_model    ('./../data/nns_9HA_noemb_6b6/keep/generator_new.h5')
-discriminator= load_model ('./../data/nns_9HA_noemb_6b6/keep/discriminator_new.h5')
+generator = load_model    ('./../data/nns_9HA_noemb_6b6/generator_new.h5')
+discriminator= load_model ('./../data/nns_9HA_noemb_6b6/discriminator_new.h5')
 """
 regressor_top.trainable = False
 regressor.trainable = False
@@ -666,7 +666,7 @@ decoder = load_model('./../data/nns_9HA_noemb_6b6/decoder_newencinp.h5')
 # Generate 500 different values of heat capacities
 """
 from progressbar import ProgressBar
-N = 1000
+N = 50
 n_sample = 200
 
 gen_error = []
@@ -741,10 +741,10 @@ for hc in pbar(range(n_sample)):
 
             if ' ' in smiles[:-1]:
                 continue
-            #m = Chem.MolFromSmiles(smiles[:-1],sanitize=False)
-            m = Chem.MolFromSmiles(smiles[:-1])
+            #m = Chem.MolFromSmiles(smiles[:-1], sanitize=False)
+            m = Chem.MolFromSmiles(smiles[:-1], sanitize=True)
             if m is not None:
-                if len(construct_atomic_number_array(m)) <= 9:
+                if len(construct_atomic_number_array(m)) <= 12:
                     idx.append(i)
 
         idx = np.array(idx)
@@ -766,7 +766,7 @@ for hc in pbar(range(n_sample)):
 output = {}
 
 for i, s in enumerate (gen_smiles):
-    ss = Chem.MolToSmiles(Chem.MolFromSmiles(s))
+    ss = Chem.MolToSmiles(Chem.MolFromSmiles(s, sanitize=True))
     gen_smiles[i] = ss
 
 output['SMILES'] = gen_smiles
