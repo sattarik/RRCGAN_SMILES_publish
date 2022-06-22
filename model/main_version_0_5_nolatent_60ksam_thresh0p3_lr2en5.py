@@ -28,7 +28,7 @@ from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error 
 from sklearn.metrics import mean_absolute_error
 from sklearn.metrics import explained_variance_score
-
+from scipy.stats import truncnorm
 
 import pickle
 import tensorflow as tf
@@ -666,7 +666,7 @@ decoder = load_model('./../data/nns_9HA_noemb_6b6/decoder_newencinp.h5')
 # Generate 500 different values of heat capacities
 """
 from progressbar import ProgressBar
-N = 100
+N = 50
 n_sample = 250
 
 gen_error = []
@@ -676,6 +676,15 @@ preds = []
 gen_atoms_embedding = []
 gen_bonds_embedding = []
 
+# Normal sampling instead of uniform
+# define normal sampling in ranges
+def get_truncated_normal(mean=0, sd=1, low=0, upp=10):
+    return truncnorm(
+            (low - mean) / sd, (upp - mean) / sd, loc=mean, scale=sd)
+mean_y_train = np.mean(y_train) * (s_max_dataset - s_min_dataset) + s_min_dataset
+print ('average of y_train', mean_y_train)
+std_y_train = np.std(y_train) * (s_max_dataset - s_min_dataset)
+print ('std of y_train', std_y_train)
 regressor_top.trainable = False
 regressor.trainable = False
 generator.trainable = False
@@ -686,8 +695,9 @@ for hc in pbar(range(n_sample)):
     try:
         # get it back to original of s_min to s_max
         sample_y = np.random.uniform(s_min_dataset, s_max_dataset, size=[1,])
-        #X = get_truncated_normal(mean=30, sd=5, low=s_min, upp=s_max)
-        #sample_y = X.rvs()
+        # using normal sampling for generation
+        X = get_truncated_normal(mean=mean_y_train, sd=std_y_train, low=s_min_dataset, upp=s_max_dataset)
+        sample_y = X.rvs()
         print (sample_y)
         sample_y = np.round(sample_y, 4)
         sample_y = sample_y * np.ones([N,])
