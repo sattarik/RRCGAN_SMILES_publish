@@ -666,8 +666,8 @@ decoder = load_model('./../data/nns_9HA_noemb_6b6/decoder_newencinp.h5')
 # Generate 500 different values of heat capacities
 """
 from progressbar import ProgressBar
-N = 50
-n_sample = 250
+N = 100
+n_sample = 500
 
 gen_error = []
 gen_smiles = []
