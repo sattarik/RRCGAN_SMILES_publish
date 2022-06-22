@@ -170,6 +170,7 @@ h = Dense(1 * 1 * 128)(h)
 R1 = Reshape([1, 1, 128])(h)
 R2 = Reshape([1, 1, 128])(h)
 
+# the origin was LeakyReLU
 for i in range(3):
     R1 = UpSampling2D(size = config.upFilters[i])(R1)
     C1 = Conv2D(filters = config.genFilters[i], 
@@ -177,7 +178,7 @@ for i in range(3):
                strides = 1, 
                padding = 'same')(R1)
     B1 = BatchNormalization()(C1)
-    R1 = LeakyReLU(alpha = 0.2)(B1)
+    R1 = ReLU(alpha = 0.2)(B1) #LeakyReLU
 
 for i in range(3):
     R2 = UpSampling2D(size = config.upFilters[i])(R2)
@@ -186,7 +187,7 @@ for i in range(3):
                strides = 1, 
                padding = 'same')(R2)
     B2 = BatchNormalization()(C2)
-    R2 = LeakyReLU(alpha = 0.2)(B2)
+    R2 = ReLU(alpha = 0.2)(B2) #LeakyReLU
     
 R1 = Conv2D(1,
             kernel_size = 3,

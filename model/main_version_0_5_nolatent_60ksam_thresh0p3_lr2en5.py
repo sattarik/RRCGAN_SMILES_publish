@@ -269,14 +269,16 @@ train_atoms_embedding, train_bonds_embedding, _ = encoder.predict([X_smiles_trai
 atoms_embedding, bonds_embedding, _ = encoder.predict([X_smiles_train])
 atoms_val, bonds_val, _ = encoder.predict([X_smiles_val])
 
-try:
-    regressor =     load_model('./../data/nns_9HA_noemb_6b6/regressor.h5')
-    regressor_top = load_model('./../data/nns_9HA_noemb_6b6/regressor_top.h5')
-    print (".h5 was read")
+#try:
+regressor =     load_model('./../data/nns_9HA_noemb_6b6/regressor_keep.h5')
+regressor_top = load_model('./../data/nns_9HA_noemb_6b6/regressor_top_keep.h5')
+print (".h5 was read")
+"""
 except:
     print ("no .h5 available")
     regressor.compile(loss = 'mse', optimizer = Adam(1e-5))
     pass
+"""
 """
 history = regressor.fit([atoms_embedding, bonds_embedding], 
               y_train,
@@ -315,8 +317,8 @@ print ("prediction on test: ", pred )
 print ("True test values: ", y_val)
 
 # Saving the currently trained models
-#regressor.save('./../data/nns_9HA_noemb_6b6/regressor.h5')
-#regressor_top.save('./../data/nns_9HA_noemb_6b6/regressor_top.h5')
+regressor.save('./../data/nns_9HA_noemb_6b6/regressor.h5')
+regressor_top.save('./../data/nns_9HA_noemb_6b6/regressor_top.h5')
 
 """
 # save the losses 
@@ -378,9 +380,9 @@ combined = build_combined(z, y,
 # loading pretrained models
 regressor = load_model    ('./../data/nns_9HA_noemb_6b6/regressor.h5')
 regressor_top = load_model('./../data/nns_9HA_noemb_6b6/regressor_top.h5')
-generator = load_model    ('./../data/nns_9HA_noemb_6b6/generator_new.h5')
-discriminator= load_model ('./../data/nns_9HA_noemb_6b6/discriminator_new.h5')
-
+generator = load_model    ('./../data/nns_9HA_noemb_6b6/keep/generator_new.h5')
+discriminator= load_model ('./../data/nns_9HA_noemb_6b6/keep/discriminator_new.h5')
+"""
 regressor_top.trainable = False
 regressor.trainable = False
 
@@ -390,7 +392,7 @@ bond_max = 9
 MAX_NB_WORDS = 23
 MAX_SEQUENCE_LENGTH = 35
 
-epochs = 20
+epochs = 120 
 batch_size = 64
 batches = y_train.shape[0] // batch_size
 threshold = 0.3 # defining accurate samples
@@ -646,8 +648,10 @@ discriminator.save('./../data/nns_9HA_noemb_6b6/discriminator_new.h5')
 
 # Generation Study
 
-generator = load_model    ('./../data/nns_9HA_noemb_6b6/generator_new.h5')
-discriminator = load_model('./../data/nns_9HA_noemb_6b6/discriminator_new.h5')
+#regressor = load_model('regressor.h5')
+#regressor_top = load_model('regressor_top.h5')
+#generator = load_model    ('./../data/nns_9HA_noemb_6b6/generator_new.h5')
+#discriminator = load_model('./../data/nns_9HA_noemb_6b6/discriminator_new.h5')
 
 encoder = load_model('./../data/nns_9HA_noemb_6b6/encoder_newencinp.h5')
 decoder = load_model('./../data/nns_9HA_noemb_6b6/decoder_newencinp.h5')
@@ -660,11 +664,10 @@ decoder = load_model('./../data/nns_9HA_noemb_6b6/decoder_newencinp.h5')
 # 5. Filter out the invalid SMILES
 
 # Generate 500 different values of heat capacities
-
+"""
 from progressbar import ProgressBar
-
-N = 2000
-n_sample = 100
+N = 1000
+n_sample = 200
 
 gen_error = []
 gen_smiles = []
@@ -680,7 +683,7 @@ discriminator.trainable = False
 
 pbar = ProgressBar()
 for hc in pbar(range(n_sample)):
-    #try:
+    try:
         # get it back to original of s_min to s_max
         sample_y = np.random.uniform(s_min_dataset, s_max_dataset, size=[1,])
         #X = get_truncated_normal(mean=30, sd=5, low=s_min, upp=s_max)
@@ -741,7 +744,7 @@ for hc in pbar(range(n_sample)):
             #m = Chem.MolFromSmiles(smiles[:-1],sanitize=False)
             m = Chem.MolFromSmiles(smiles[:-1])
             if m is not None:
-                if len(construct_atomic_number_array(m)) <= 12:
+                if len(construct_atomic_number_array(m)) <= 9:
                     idx.append(i)
 
         idx = np.array(idx)
@@ -755,9 +758,9 @@ for hc in pbar(range(n_sample)):
         gen_bonds_embedding.extend(sample_bonds_embedding[idx])
 
         preds.extend(list(pred[idx]))
-    #except:
-    #    print('Did not discover SMILES for HC: {}'.format(sample_y))
-    #    pass    
+    except:
+        print('Did not discover SMILES for HC: {}'.format(sample_y))
+        pass    
 
 
 output = {}
@@ -783,9 +786,10 @@ output.to_csv ('./../experiments/regular_9HA_6b6latent/Regular_noscreen.csv', in
 # total # of samples
 N = len(gen_error)
 # Explained Variance R2 from sklearn.metrics.explained_variance_score
-explained_variance_R2_pred_des = explained_variance_score(output['pred_cv'], output['des_cv'])
+explained_variance_R2_pred_des = explained_variance_score(output['des_cv'], output['pred_cv'])
 print ("explained_varice_R2_pred_des", explained_variance_R2_pred_des)
-
+rsquared = r2_score (output['des_cv'], output['pred_cv'])
+print ("r squared r**2", rsquared)
 # mean absolute error 
 MAE_pred_des = mean_absolute_error(output['pred_cv'], output['des_cv'])
 print ("MAE_pred_des", MAE_pred_des)
