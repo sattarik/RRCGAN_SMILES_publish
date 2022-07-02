@@ -72,10 +72,10 @@ import ntpath
 from scipy.stats import truncnorm
 
 """ fix all the seeds,results are still slighthly different """
-randomtf.set_seed(1)
-os.environ['PYTHONHASHSEED'] = '0'
-np.random.seed(42)
-random.seed(12345)
+randomtf.set_seed(10)
+os.environ['PYTHONHASHSEED'] = '10'
+np.random.seed(420)
+random.seed(123450)
 #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.3667)
 #session_conf = tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=1, gpu_options=gpu_options)
 #tf.set_random_seed(1234)
@@ -238,7 +238,7 @@ O_dis = Dense(1, activation = 'sigmoid')(y2)
 
 
 discriminator = Model([inp1, inp2, y], O_dis)
-discriminator.compile(loss = 'binary_crossentropy', optimizer = Adam(lr = 2e-5, beta_1 = 0.5))
+discriminator.compile(loss = 'binary_crossentropy', optimizer = Adam(lr = 5e-5, beta_1 = 0.5))
 print (discriminator.summary()) 
 
 ## Regressor
@@ -388,7 +388,7 @@ def build_combined(z, y,
     combined.compile(loss = ['binary_crossentropy',
                              'mse'], 
                      loss_weights = [1.0, 25.0], 
-                     optimizer = Adam(2e-5, beta_1 = 0.5))
+                     optimizer = Adam(5e-5, beta_1 = 0.5))
     return combined
 
 combined = build_combined(z, y,
@@ -414,7 +414,7 @@ bond_max = 9
 MAX_NB_WORDS = 23
 MAX_SEQUENCE_LENGTH = 35
 
-epochs = 200 
+epochs = 50 
 batch_size = 64
 batches = cv_gantrain.shape[0] // batch_size
 threshold = 0.3 # defining accurate samples
@@ -475,9 +475,9 @@ for e in range(epochs):
         #if b<100:
         #    d=1
         for _ in range(d):
-            d_loss_real = discriminator.train_on_batch([atoms_embedding,bonds_embedding, batch_y],
+            d_loss_real = discriminator.train_on_batch([atoms_embedding, bonds_embedding, batch_y],
                                                        [1 * np.ones((batch_size, 1))])
-            d_loss_fake = discriminator.train_on_batch([gen_atoms_embedding,gen_bonds_embedding, batch_y],
+            d_loss_fake = discriminator.train_on_batch([gen_atoms_embedding, gen_bonds_embedding, batch_y],
                                                        [np.zeros((batch_size, 1))])
 
         d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
@@ -570,7 +570,7 @@ for e in range(epochs):
             valid0 += 1
             idx0_.append(iter_)
         if m is not None:
-            if len(construct_atomic_number_array(m)) <= 12:
+            if len(construct_atomic_number_array(m)) <= 9:
                 valid += 1
                 idx_.append(iter_)
                 try:

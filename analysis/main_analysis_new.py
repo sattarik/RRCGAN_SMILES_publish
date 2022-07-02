@@ -10,7 +10,7 @@ rdBase.DisableLog('rdApp.error')
 from rdkit import Chem
 print ("!!!!!!!!!!!!!!!!!!!!!we are after importing rdkit!!!!!!!!!!!!!!!!!!")
 
-from thermo.joback import Joback
+from thermo import Joback
 import numpy as np
 import pandas as pd
 from numpy import ndarray
