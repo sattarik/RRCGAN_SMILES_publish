@@ -663,8 +663,8 @@ with open('GAN_loss.pickle', 'wb') as f:
 # Saving the currently trained models
 #regressor.save('regressor.h5')
 #regressor_top.save('regressor_top.h5')
-generator.save('./../data/nns_9HA_noemb_6b6/generator_new.h5')
-discriminator.save('./../data/nns_9HA_noemb_6b6/discriminator_new.h5')
+generator.save('./../data/nns_9HA_noemb_6b6/generator_newfinal.h5')
+discriminator.save('./../data/nns_9HA_noemb_6b6/discriminator_newfinal.h5')
 
 ##====#
 
@@ -802,7 +802,7 @@ plt.savefig("gen_error_hist.png")
 
 output = pd.DataFrame(output)
 output.reset_index(drop = True, inplace = True)
-output.to_csv ('./../experiments/regular_9HA_6b6latent/Regular_noscreen.csv', index=False)
+output.to_csv ('./../experiments/regular_9HA_6b6latent/Regular_noscreenfinal.csv', index=False)
 ## Statistics  (# pred=True value, Des=prediction)
 
 # total # of samples
@@ -880,7 +880,7 @@ plt.savefig("test_bonds_dist.png")
 #output.reset_index(drop = True, inplace = True)
 output2.reset_index(drop = True, inplace = True)
 #output.to_csv ('./../experiments/regular_9HA_6b6latent/Regular_noscreen.csv', index = False)
-output2.to_csv('./../experiments/regular_9HA_6b6latent/Regular_NODUP_noscreen.csv', index = False)
+output2.to_csv('./../experiments/regular_9HA_6b6latent/Regular_NODUP_noscreenfinal.csv', index = False)
 """with open('gen_pickles.pickle', 'wb') as f:
     pickle.dump(gen_unique_pickles, f)
 """
