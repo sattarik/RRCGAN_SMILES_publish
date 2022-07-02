@@ -400,8 +400,13 @@ combined = build_combined(z, y,
 
 """ Training RCGAN """
 # loading pretrained models
+<<<<<<< HEAD
 #regressor = load_model    ('./../data/nns_9HA_noemb_6b6/regressor.h5')
 #regressor_top = load_model('./../data/nns_9HA_noemb_6b6/regressor_top.h5')
+=======
+regressor = load_model    ('./../data/nns_9HA_noemb_6b6/keep/regressor.h5')
+regressor_top = load_model('./../data/nns_9HA_noemb_6b6/keep/regressor_top.h5')
+>>>>>>> a565f99a48af7bcc857a484e541663c23cb581ff
 #generator = load_model    ('./../data/nns_9HA_noemb_6b6/generator_new.h5')
 #discriminator= load_model ('./../data/nns_9HA_noemb_6b6/discriminator_new.h5')
 
@@ -414,7 +419,11 @@ bond_max = 9
 MAX_NB_WORDS = 23
 MAX_SEQUENCE_LENGTH = 35
 
+<<<<<<< HEAD
 epochs = 200 
+=======
+epochs = 200
+>>>>>>> a565f99a48af7bcc857a484e541663c23cb581ff
 batch_size = 64
 batches = cv_gantrain.shape[0] // batch_size
 threshold = 0.3 # defining accurate samples
@@ -663,8 +672,8 @@ with open('GAN_loss.pickle', 'wb') as f:
 # Saving the currently trained models
 #regressor.save('regressor.h5')
 #regressor_top.save('regressor_top.h5')
-generator.save('./../data/nns_9HA_noemb_6b6/generator_new.h5')
-discriminator.save('./../data/nns_9HA_noemb_6b6/discriminator_new.h5')
+generator.save('./../data/nns_9HA_noemb_6b6/generator_new2.h5')
+discriminator.save('./../data/nns_9HA_noemb_6b6/discriminator_new2.h5')
 
 ##====#
 
@@ -688,7 +697,7 @@ decoder = load_model('./../data/nns_9HA_noemb_6b6/decoder_newencinp.h5')
 # Generate 500 different values of heat capacities
 
 from progressbar import ProgressBar
-N = 30
+N = 50
 n_sample = 700
 
 gen_error = []
@@ -885,7 +894,3 @@ output2.to_csv('./../experiments/regular_9HA_6b6latent/Regular_NODUP_noscreen.cs
     pickle.dump(gen_unique_pickles, f)
 """
 
-explained_variance_R2_pred_des = explained_variance_score(output['des_cv'], output['pred_cv'])
-print ("explained_varice_R2_pred_des", explained_variance_R2_pred_des)
-rsquared = r2_score (output['des_cv'], output['pred_cv'])
-print ("r squared r**2", rsquared)
