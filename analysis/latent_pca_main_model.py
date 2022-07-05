@@ -87,55 +87,62 @@ random.seed(12345)
 #sess = tf.Session(graph=tf.get_default_graph(), config=session_conf)
 #K.set_session(sess)
 
+tf.config.list_physical_devices('GPU')
+
 """ reading and preprocessing data"""
 with open('./../data/trainingsets/60000_train_regular_qm9/image_train.pickle', 'rb') as f:
-    X_smiles_train, SMILES_train, X_atoms_train, X_bonds_train, y_train = pickle.load(f)
+    X_smiles_train, SMILES_train, X_atoms_train, X_bonds_train, y_train0 = pickle.load(f)
 
 with open('./../data/trainingsets/60000_train_regular_qm9/image_test.pickle', 'rb') as f:
-    X_smiles_val, SMILES_val, X_atoms_val, X_bonds_val, y_val = pickle.load(f)
+    X_smiles_val, SMILES_val, X_atoms_val, X_bonds_val, y_val0 = pickle.load(f)
 
 with open('./../data/trainingsets/60000_train_regular_qm9/tokenizer.pickle', 'rb') as f:
     tokenizer = pickle.load(f)
-
 tokenizer[0] = ' '
+
+with open('./../data/trainingsets/60000_train_regular_qm9/train_GAN.pickle', 'rb') as f:
+    X_smiles_gantrain, SMILES_gantrain, cv_gantrain = pickle.load(f)
+
+
+X_smiles_gantrain_ = []
+for i in X_smiles_gantrain:
+  X_smiles_gantrain_.append(i)
+X_smiles_gantrain = np.array (X_smiles_gantrain_)
+print (X_smiles_gantrain.shape)
+
+cv_gantrain_ = []
+for i in cv_gantrain:
+  cv_gantrain_.append(i)
+cv_gantrain = np.array (cv_gantrain_)
+print (cv_gantrain.shape)
+
+
 
 # Subsampling has been done in the data preprocesses
 print ('X_smiles_train shape: ', X_smiles_train.shape)
 print ('X_smiles_test shape: ', X_smiles_val.shape)
 #print ('last SMILES train: ', SMILES_train[-1])
 
-# Outlier removal 1.5*IQR rule
-IQR = - np.quantile(y_train, 0.25) + np.quantile(y_train, 0.75)
-lower_bound, upper_bound = np.quantile(y_train, 0.25) - 1.5 * IQR, np.quantile(y_train, 0.75) + 1.5 * IQR
-idx = np.where((y_train >= lower_bound) & (y_train <= upper_bound))
+## Outlier removal 1.5*IQR rule
+# Train samples
+IQR = - np.quantile(y_train0, 0.25) + np.quantile(y_train0, 0.75)
+lower_bound, upper_bound = np.quantile(y_train0, 0.25) - 1.5 * IQR, np.quantile(y_train0, 0.75) + 1.5 * IQR
+idx = np.where((y_train0 >= lower_bound) & (y_train0 <= upper_bound))
 
-y_train = y_train[idx]
+y_train = y_train0[idx]
 X_smiles_train = X_smiles_train[idx]
 X_atoms_train = X_atoms_train[idx]
 X_bonds_train = X_bonds_train[idx]
-# print the first sample
-print ('last Cv:', y_train[-1])
-print ('last X_smiles_train: ', X_smiles_train[-1])
-print ('last X atom: ', X_atoms_train[-1])
-print ('last X bond: ', X_bonds_train[-1])
 
-# Outlier removal
-IQR = - np.quantile(y_val, 0.25) + np.quantile(y_val, 0.75)
-lower_bound, upper_bound = np.quantile(y_val, 0.25) - 1.5 * IQR, np.quantile(y_val, 0.75) + 1.5 * IQR
-idx = np.where((y_val >= lower_bound) & (y_val <= upper_bound))
+# Test samples
+IQR = - np.quantile(y_val0, 0.25) + np.quantile(y_val0, 0.75)
+lower_bound, upper_bound = np.quantile(y_val0, 0.25) - 1.5 * IQR, np.quantile(y_val0, 0.75) + 1.5 * IQR
+idx = np.where((y_val0 >= lower_bound) & (y_val0 <= upper_bound))
 
-y_val = y_val[idx]
+y_val = y_val0[idx]
 X_smiles_val = X_smiles_val[idx]
 X_atoms_val = X_atoms_val[idx]
 X_bonds_val = X_bonds_val[idx]
-
-# subsampling
-idx = np.random.choice(len(y_train), int(len(y_train) * 0.016), replace = False)
-y_train = y_train[idx]
-X_smiles_train = X_smiles_train[idx]
-X_atoms_train = X_atoms_train[idx]
-X_bonds_train = X_bonds_train[idx]
-
 
 # normalize the bond and aotm matrices:
 def norm(X: ndarray) -> ndarray:
@@ -146,44 +153,28 @@ X_atoms_train, X_bonds_train = (norm(X_atoms_train),
                                 norm(X_bonds_train))
 X_atoms_val, X_bonds_val = (norm(X_atoms_val),
                             norm(X_bonds_val))
-
-def y_norm(y: ndarray) -> ndarray:
-    scaler_min = np.min(y)
-    scaler_max = np.max(y)
-
-    y = (y - scaler_min) / (scaler_max - scaler_min)
-
-    return y, scaler_min, scaler_max
-
+# normalize the property
 s_min1 = np.min (y_train)
 s_max1 = np.max (y_train)
 
 s_min2 = np.min(y_val)
 s_max2 = np.max(y_val)
+
 s_min = min(s_min1, s_min2)
 s_max = max(s_max1, s_max2)
 
-# should be consistant with your trained models (Autoencoder, Regressor)
-s_min_dataset, s_max_dataset = 20.939, 42.237
-s_min_norm, s_max_norm = 20.939, 42.237
+s_min_dataset, s_max_dataset = s_min, s_max
+s_min_norm, s_max_norm = s_min_dataset, s_max_dataset
 
-# normalize the property
 y_val   = (y_val -   s_min_norm) / (s_max_norm - s_min_norm)
 y_train = (y_train - s_min_norm) / (s_max_norm - s_min_norm)
+cv_gantrain = (cv_gantrain - s_min_norm) / (s_max_norm - s_min_norm)
 print ("min and max dataset and val normalized", s_min, s_max, np.min(y_val), np.max(y_val))
 print ("min and max dataset and train normalized", s_min, s_max, np.min(y_train), np.max(y_train))
 print ("min and max used for normalization: ", s_min_norm, s_max_norm)
 
-""" Training RCGAN """
-encoder = load_model('./../data/nns_9HA_noemb_6b6/encoder_newencinp.h5')
-decoder = load_model('./../data/nns_9HA_noemb_6b6/decoder_newencinp.h5')
-regressor = load_model    ('./../data/nns_9HA_noemb_6b6/regressor.h5')
-regressor_top = load_model('./../data/nns_9HA_noemb_6b6/regressor_top.h5')
-generator = load_model    ('./../data/nns_9HA_noemb_6b6/generator.h5')
-discriminator= load_model ('./../data/nns_9HA_noemb_6b6/discriminator.h5')
-
-N = 100
-n_sample = 150
+N = 30
+n_sample = 700
 
 gen_error = []
 gen_smiles = []
@@ -197,13 +188,13 @@ regressor.trainable = False
 generator.trainable = False
 discriminator.trainable = False
 
+np.random.seed(100)
+
 pbar = ProgressBar()
 for hc in pbar(range(n_sample)):
-    #try:
+    try:
         # get it back to original of s_min to s_max
-        sample_y = np.random.uniform(s_min_dataset, s_max_dataset, size = [1,])
-        #X = get_truncated_normal(mean=30, sd=5, low=s_min, upp=s_max)
-        #sample_y = X.rvs()
+        sample_y = np.random.uniform(s_min_norm, s_max_norm, size=[1,])
         print (sample_y)
         sample_y = np.round(sample_y, 4)
         sample_y = sample_y * np.ones([N,])
@@ -257,10 +248,11 @@ for hc in pbar(range(n_sample)):
 
             if ' ' in smiles[:-1]:
                 continue
-            #m = Chem.MolFromSmiles(smiles[:-1],sanitize=False)
-            m = Chem.MolFromSmiles(smiles[:-1])
+            #m = Chem.MolFromSmiles(smiles[:-1], sanitize=False)
+            m = Chem.MolFromSmiles(smiles[:-1], sanitize=True)
             if m is not None:
-                idx.append(i)
+                if len(construct_atomic_number_array(m)) <= 9:
+                    idx.append(i)
 
         idx = np.array(idx)
         all_gen_smiles = np.array(all_gen_smiles)
@@ -273,10 +265,9 @@ for hc in pbar(range(n_sample)):
         gen_bonds_embedding.extend(sample_bonds_embedding[idx])
 
         preds.extend(list(pred[idx]))
-    #except:
-    #    print('Did not discover SMILES for HC: {}'.format(sample_y))
-    #    pass   
-
+    except:
+        print('Did not discover SMILES for HC: {}'.format(sample_y))
+        pass
  
 output = {}
 

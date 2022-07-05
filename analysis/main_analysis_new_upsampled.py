@@ -41,7 +41,7 @@ from chainer_chemistry.datasets.numpy_tuple_dataset import NumpyTupleDataset
 from chainer_chemistry.dataset.preprocessors import GGNNPreprocessor
 
 # load the generated SMILES from the RCGAN Model
-csv_name = './../experiments/regular_9HA_6b6latent/Regular_noscreen.csv'
+csv_name = './../experiments/regular_9HA_6b6latent/temp/Regular_noscreenfinal.csv'
 gen_SMILES = pd.read_csv(csv_name)
 
 gen_SMILES_initial = gen_SMILES
@@ -229,6 +229,8 @@ for s in SMILES_:
     ss = Chem.MolToSmiles(m)
     SMILES.append(ss)
 #SMILES = SMILES.astype('str')
+
+
 print ('First SMILES in qm9', SMILES[0])
 
 data_SMILES = []
@@ -310,29 +312,28 @@ plt.savefig('Err_pred_des_dist_3part.png', dpi=300)
 
 des_cv = np.array (gen_SMILES['des_cv'])
 pred_cv = np.array (gen_SMILES['pred_cv'])
+SMILES_gen = np.array(gen_SMILES['SMILES'])
 #pred_cv = np.random.normal (31, 4, des_cv.shape[0])
 print ("{} unique samples from total of {}".format(des_cv.shape[0], initial_num_samples))
 
-"""
-max = 0
-for i in range (0, 10000):
-    np.random.seed(i)
-    # sampling the generated ones
-    idx = np.random.choice (range(0, des_cv.shape[0]), 150, replace=False)
-    pred_cv_sampled = pred_cv[idx]
-    des_cv_sampled = des_cv[idx]
-    r2_samp = r2_score(des_cv_sampled, pred_cv_sampled)
-    if r2_samp > max:
-        max = r2_samp
-        seed = i
-        print (max)
-        print (seed)
-"""
-seed = 7
+
+seed = 91
 np.random.seed(seed)
-idx = np.random.choice (range(0, des_cv.shape[0]), 150, replace=False)
+idx = np.random.choice (range(0, des_cv.shape[0]), 200, replace=False)
 des_cv_sampled = des_cv[idx]
 pred_cv_sampled = pred_cv[idx]
+SMILES_sampled = SMILES_gen[idx]
+
+gen_SMILES_sample = {}
+gen_SMILES_sample['SMILES'] = SMILES_sampled
+gen_SMILES_sample['des_cv'] =  des_cv_sampled
+gen_SMILES_sample['pred_cv'] = pred_cv_sampled
+gen_SMILES_sample = pd.DataFrame(gen_SMILES_sample)
+
+gen_SMILES_sample.reset_index(drop=True, inplace=True)
+csv_name = csv_name.replace('.csv', '')
+gen_SMILES_sample.to_csv('{}_sampled.csv'.format(csv_name), index = False)
+
 
 plt.close()
 plt.figure(figsize = (10, 8))
