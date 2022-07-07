@@ -12,76 +12,77 @@
 import warnings
 warnings.filterwarnings('ignore')
 
-from progressbar import ProgressBar
-
 import time
 import os
 import re
 import pandas as pd
-import tensorflow as tf
-from tensorflow import keras
 import random
+
 import numpy as np
 from numpy import ndarray
+
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer
-import pylab
-import pickle
-
-from tensorflow.keras.layers import (Input, Dropout, LSTM, Reshape, LeakyReLU,
-                          Concatenate, ReLU, Flatten, Dense, Embedding,
-                          BatchNormalization, Activation, SpatialDropout1D,
-                          Conv2D, MaxPooling2D, UpSampling2D)
-from tensorflow.keras.models import Model, load_model
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.losses import mse, binary_crossentropy
-import tensorflow.keras.backend as K
-
-from tensorflow.keras.preprocessing.text import Tokenizer
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-
-import np_utils
-
-from tensorflow.keras.utils import  to_categorical
-from IPython.display import clear_output
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import matplotlib.lines as mlines
-from matplotlib.lines import Line2D
-
-from progressbar import ProgressBar
-import seaborn as sns
-
-from sklearn.metrics import r2_score
-
-
-print ("!!!!!!!!! we are just before importing rdkit!!!!!")
-from rdkit import rdBase
-rdBase.DisableLog('rdApp.error')
-from rdkit import Chem
-print ("!!!!!!!!!!!!!!!!!!!!!we are after importing rdkit!!!!!!!!!!!!!!!!!!")
-
-from scipy.stats import truncnorm
 from sklearn.decomposition import PCA
-
-import matplotlib.ticker as tk
-
-import ntpath
-import re
-
-from sklearn.manifold import TSNE
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
 from sklearn.metrics import explained_variance_score
+from scipy.stats import truncnorm
 
-from matplotlib.colors import ListedColormap
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import Descriptors
+from rdkit.Chem import Crippen as logp
+
+import pickle
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras.layers import (Input, Dropout, LSTM, Reshape, LeakyReLU,
+                          Concatenate, ReLU, Flatten, Dense, Embedding,
+                          BatchNormalization, Activation, SpatialDropout1D,
+                          Conv2D, MaxPooling2D, UpSampling2D, Lambda)
+from tensorflow.keras.models     import Model, load_model
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.losses     import mse, binary_crossentropy
+import tensorflow.keras.backend as K
+from tensorflow.keras.metrics import RootMeanSquaredError
+from tensorflow.keras.metrics import  mean_squared_error as mse_keras
+from tensorflow.keras.backend import argmax as argmax
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow import one_hot
+
+from tensorflow.keras.utils import  to_categorical
+from tensorflow import random as randomtf
+
+from IPython.display import clear_output
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import matplotlib.lines as mlines
+from   matplotlib.lines import Line2D
+from   matplotlib.colors import ListedColormap
+import matplotlib.ticker as tk
 from matplotlib import rc, rcParams
 
-os.environ['PYTHONHASHSEED'] = '0'
+from progressbar import ProgressBar
+import seaborn as sns
+
+from chainer_chemistry.dataset.preprocessors import GGNNPreprocessor, construct_atomic_number_array
+preprocessor = GGNNPreprocessor()
+from rdkit import rdBase
+rdBase.DisableLog('rdApp.error')
+from rdkit import Chem
+
+import ntpath
+from scipy.stats import truncnorm
+
+""" fix all the seeds,results are still slighthly different """
+randomtf.set_seed(1)
+os.environ['PYTHONHASHSEED'] = '1'
 np.random.seed(42)
 random.seed(12345)
-#gpu_options = tf.GPUOptions(per_prociess_gpu_memory_fraction=0.3667)
+#gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.3667)
 #session_conf = tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=1, gpu_options=gpu_options)
 #tf.set_random_seed(1234)
 #sess = tf.Session(graph=tf.get_default_graph(), config=session_conf)
@@ -116,7 +117,11 @@ for i in cv_gantrain:
 cv_gantrain = np.array (cv_gantrain_)
 print (cv_gantrain.shape)
 
-
+SMILES_gantrain_ = []
+for smiles in SMILES_gantrain:
+  SMILES_gantrain_.append(smiles)
+SMILES_gantrain = np.array (SMILES_gantrain_)
+print (SMILES_gantrain.shape)
 
 # Subsampling has been done in the data preprocesses
 print ('X_smiles_train shape: ', X_smiles_train.shape)
@@ -143,6 +148,19 @@ y_val = y_val0[idx]
 X_smiles_val = X_smiles_val[idx]
 X_atoms_val = X_atoms_val[idx]
 X_bonds_val = X_bonds_val[idx]
+
+
+# subsampling
+idx = np.random.choice(len(y_train), int(len(y_train) * 0.016), replace = False)
+y_train = y_train[idx]
+X_smiles_train = X_smiles_train[idx]
+X_atoms_train = X_atoms_train[idx]
+X_bonds_train = X_bonds_train[idx]
+
+idx = np.random.choice(len(cv_gantrain), int(len(cv_gantrain) * 0.016), replace=False)
+cv_gantrain = cv_gantrain[idx]
+X_smiles_gantrain = X_smiles_gantrain[idx]
+SMILES_gantrain = SMILES_gantrain[idx]
 
 # normalize the bond and aotm matrices:
 def norm(X: ndarray) -> ndarray:
@@ -173,6 +191,13 @@ print ("min and max dataset and val normalized", s_min, s_max, np.min(y_val), np
 print ("min and max dataset and train normalized", s_min, s_max, np.min(y_train), np.max(y_train))
 print ("min and max used for normalization: ", s_min_norm, s_max_norm)
 
+encoder = load_model('./../data/nns_9HA_noemb_6b6/keep/encoder_newencinp.h5')
+decoder = load_model('./../data/nns_9HA_noemb_6b6/keep/decoder_newencinp.h5')
+regressor =     load_model('./../data/nns_9HA_noemb_6b6/keep/regressor.h5')
+regressor_top = load_model('./../data/nns_9HA_noemb_6b6/keep/regressor_top.h5')
+generator = load_model    ('./../data/nns_9HA_noemb_6b6/keep/generator_new.h5')
+discriminator= load_model ('./../data/nns_9HA_noemb_6b6/keep/discriminator_new.h5')
+"""
 N = 30
 n_sample = 700
 
@@ -263,6 +288,7 @@ for hc in pbar(range(n_sample)):
         sample_ys.extend(list(sample_y[idx]))
         gen_atoms_embedding.extend(sample_atoms_embedding[idx])
         gen_bonds_embedding.extend(sample_bonds_embedding[idx])
+        
 
         preds.extend(list(pred[idx]))
     except:
@@ -281,48 +307,60 @@ output['des_cv'] = sample_ys
 output['pred_cv'] = preds
 output['Err_pred_des'] = gen_error
 
+with open('./../experiments/regular_9HA_6b6latent/latent/gen_atoms_bonds.pickle', 'wb') as f:
+    pickle.dump((gen_atoms_embedding, gen_bonds_embedding), f)
+
+output = pd.DataFrame(output)
+output.reset_index(drop = True, inplace = True)
+output.to_csv ('./../experiments/regular_9HA_6b6latent/latent/Regular_noscreenrelug.csv', index=False)
+"""
+
+# read the generated data
+csv_name = './../experiments/regular_9HA_6b6latent/latent/Regular_noscreenrelug.csv'
+gen_SMILES = pd.read_csv(csv_name)
+gen_smiles = gen_SMILES ['SMILES']
+sample_ys = gen_SMILES ['des_cv']
+preds = gen_SMILES ['pred_cv']
+gen_error = gen_SMILES ['Err_pred_des']
+
+with open('./../experiments/regular_9HA_6b6latent/latent/gen_atoms_bonds.pickle', 'rb') as f:
+    gen_atoms_embedding, gen_bonds_embedding = pickle.load(f)
+
+print ('preds', preds)
+print ('des cv', sample_ys)
+
 plt.close()
 plt.hist(gen_error)
 plt.savefig("gen_error_hist.png")
 
-
-## Statistics  (# DFT=True value, Des=prediction)
-
 # total # of samples
 N = len(gen_error)
 # Explained Variance R2 from sklearn.metrics.explained_variance_score
-explained_variance_R2_DFT_des = explained_variance_score(output['pred_cv'], output['des_cv'])
+explained_variance_R2_DFT_des = explained_variance_score(sample_ys, preds)
 print ("explained_varice_R2_DFT_des", explained_variance_R2_DFT_des)
+rsquared = r2_score (sample_ys, preds)
+print (rsquared)
 
 # mean absolute error 
-MAE_DFT_des = mean_absolute_error(output['pred_cv'], output['des_cv'])
+MAE_DFT_des = mean_absolute_error(sample_ys, preds)
 print ("MAE_DFT_des", MAE_DFT_des)
 # Fractioned MAE, more normalized
-Fractioned_MAE_DFT_des = 0
-for dft, des in zip(output['pred_cv'], output['des_cv']):
-    Fractioned_MAE_DFT_des = Fractioned_MAE_DFT_des +  abs(des-dft)/des
-Fractioned_MAE_DFT_des = Fractioned_MAE_DFT_des/N
-print ("Fractioned MAE_DFT_des", Fractioned_MAE_DFT_des)
 
-# root mean squared error (RMSE), sqrt(sklearn ouputs MSE)
-RMSE_DFT_des = mean_squared_error(output['pred_cv'], output['des_cv'])**0.5
-print ("RMSE_DFT_des", RMSE_DFT_des)
-
-Fractioned_RMSE_DFT_des = 0
-for dft, des in zip(output['pred_cv'], output['des_cv']):
-    Fractioned_RMSE_DFT_des = Fractioned_RMSE_DFT_des + ((des-dft)/des)**2
-Fractioned_RMSE_DFT_des = (Fractioned_RMSE_DFT_des/N)**0.5
-print ("Fractioned_RMSE_DFT_des", Fractioned_RMSE_DFT_des)
-
-output = pd.DataFrame(output)
-# do not drop duplicate
-output2 = output.drop_duplicates(['SMILES'])
 gen_atoms_embedding = np.array(gen_atoms_embedding)
 gen_bonds_embedding = np.array(gen_bonds_embedding)
 
 
 # create classes for heat capacity
-y_train = y_train * (s_max_norm - s_min_norm) + s_min_norm
+# using cv_gantrain, uniformly distributed.
+y_train = cv_gantrain * (s_max_norm - s_min_norm) + s_min_norm
+plt.clf()
+plt.hist(y_train)
+plt.savefig('cv_gantrainhist.png', dpi=100)
+
+plt.clf()
+plt.hist(preds, color='blue', alpha=0.4)
+plt.hist(sample_ys, color='red', alpha=0.4)
+plt.savefig('pred_des.png', dpi=100)
 
 Qs = np.quantile(y_train, [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
 print ("quantile of train samples: ", Qs)
@@ -349,7 +387,9 @@ y_class = np.where((y_train > Qs[5]) & (y_train <= Qs[7]), 3, y_class)
 y_class = np.where(y_train > Qs[7], 4, y_class)
 
 print (y_class)
-Qs_gen = np.quantile(preds, [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
+# use the same classes
+#Qs_gen = np.quantile(preds, [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
+Qs_gen = Qs
 y_class_val = preds
 
 # 5 classes
@@ -361,7 +401,7 @@ y_class_val = np.where(preds > Qs_gen[7], 4, y_class_val)
 
 print (y_class_val)
 # ANALYSIS
-train_atoms_embedding, train_bonds_embedding, _ = encoder.predict([X_smiles_train, X_smiles_train]) 
+train_atoms_embedding, train_bonds_embedding, _ = encoder.predict([X_smiles_gantrain]) 
 
 X_atoms_train_ = train_atoms_embedding.reshape([train_atoms_embedding.shape[0], 
                                         6 * 6])
@@ -546,7 +586,7 @@ def pca(X=np.array([]), no_dims=36):
     return Y
 
 
-def tsne(X=np.array([]), no_dims=2, initial_dims=50, perplexity=30.0):
+def tsne(X=np.array([]), no_dims=2, initial_dims=36, perplexity=30.0):
     """
         Runs t-SNE on the dataset in the NxD array X to reduce its
         dimensionality to no_dims dimensions. The syntaxis of the function is
@@ -564,7 +604,7 @@ def tsne(X=np.array([]), no_dims=2, initial_dims=50, perplexity=30.0):
     # Initialize variables
     X = pca(X, initial_dims).real
     (n, d) = X.shape
-    max_iter = 500
+    max_iter = 200
     initial_momentum = 0.5
     final_momentum = 0.8
     eta = 500
@@ -672,8 +712,8 @@ print ("and your bonds embedding: ", X_bonds_test_[0])
 
 """ t-SNE Atoms Distribution """
 # tsne(X=np.array([]), no_dims=2, initial_dims=50, perplexity=30.0)
-X_atoms_train_tsne = tsne(X_atoms_train_, no_dims=2, initial_dims=36, perplexity=50.0)
-X_atoms_test_tsne = tsne (X_atoms_test_, no_dims=2, initial_dims=36, perplexity=30.0)
+X_atoms_train_tsne = tsne(X_atoms_train_, no_dims=2, initial_dims=20, perplexity=50.0)
+X_atoms_test_tsne = tsne (X_atoms_test_, no_dims=2, initial_dims=20, perplexity=50.0)
 
 # tsne1 vs. tsne2 atoms train
 plt.close()
@@ -707,8 +747,8 @@ plt.ylabel('t-SNE2', fontsize=25, fontweight='bold')
 plt.savefig("gen_atom_dist_tsne.png", bbox_inches='tight', dpi=300)
 
 """ t-SNE bonds distribution """
-X_bonds_train_tsne = tsne(X_bonds_train_, 2, 36, 50.0)
-X_bonds_test_tsne = tsne (X_bonds_test_, 2, 36, 50.0)
+X_bonds_train_tsne = tsne(X_bonds_train_, 2, initial_dims=20, perplexity=50.0)
+X_bonds_test_tsne = tsne (X_bonds_test_, 2, initial_dims=20, perplexity=50.0)
 
 # tsne1 vs. tsne2 bond train
 plt.close()
@@ -792,8 +832,8 @@ plt.ylabel('Cv', fontsize=25, fontweight='bold')
 plt.savefig("gen_bonds_tsne2vscv_colored.png", bbox_inches='tight', dpi=300)
 
 """tsne of combined atom and bond matrices"""
-X_Concat_train_tsne = tsne(X_Concat_train, 6, 72, 50.0)
-X_Concat_test_tsne = tsne (X_Concat_test, 6, 72, 50.0)
+X_Concat_train_tsne = tsne(X_Concat_train, 6, initial_dims=30, perplexity=50.0)
+X_Concat_test_tsne = tsne (X_Concat_test, 6, initial_dims=72, perplexity=50.0)
 
 # tsne1 vs. tsne 2 train
 plt.close()
@@ -876,10 +916,66 @@ plt.xlabel('t-SNE1', fontsize=25, fontweight='bold')
 plt.ylabel('Cv', fontsize=25, fontweight='bold')
 plt.savefig("gen_Concat_tsne2vscv.png", bbox_inches='tight', dpi=300)
 
-output.reset_index(drop=True, inplace=True)
-output2.reset_index(drop=True, inplace=True)
-output.to_csv ('./../experiments/regular_9HA_6b6latent/Regular_noscreen2.csv', index = False)
-output2.to_csv('./../experiments/regular_9HA_6b6latent/Regular_NODUP_noscreen2.csv', index = False)
-"""with open('gen_pickles.pickle', 'wb') as f:
-    pickle.dump(gen_unique_pickles, f)
-"""
+logp_train = []
+logp_valid = []
+for i, s in enumerate(SMILES_gantrain):
+        m = AllChem.MolFromSmiles(s)
+        logp_train.append(logp.MolLogP(m))
+        logp_valid.append(i)
+
+logp_test = []
+for s in gen_smiles:
+    m = AllChem.MolFromSmiles(s)
+    logp_test.append(logp.MolLogP(m))
+
+logp_train = np.array(logp_train)
+logpclass_train = logp_train
+logpclass_train = np.where(logp_train <= 1.5, 0, logpclass_train)
+logpclass_train = np.where(logp_train > 1.5, 1, logpclass_train)
+print ('logptrain', logp_train)
+print ('logpclass_train', logpclass_train)
+group_names = np.array (["logp < 1.5", "logp > 1.5"])
+target_ids = range(0,2)
+colors = ['red', 'blue']
+# tsne1 vs. tsne2 atoms train
+plt.close()
+rc('font', weight='bold')
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.tick_params(axis='both', which='major', labelsize=20)
+mpl.rcParams['axes.linewidth'] = 3.5
+for i, c, label in zip(target_ids, colors, group_names):
+    plt.scatter(X_atoms_train_tsne[logpclass_train == i, 0], 
+                X_atoms_train_tsne[logpclass_train == i, 1], 
+                c=c, label=label)
+plt.legend(fontsize=12)
+ax.tick_params(width=2, length=4)
+plt.xlabel('t-SNE1', fontsize=25, fontweight='bold')
+plt.ylabel('t-SNE2', fontsize=25, fontweight='bold')
+plt.savefig("train_atom_dist_tsne_logp.png", bbox_inches='tight', dpi=300)
+
+
+
+logp_test = np.array(logp_test)
+logpclass_test = logp_test
+logpclass_test = np.where(logp_test <= 1.5, 0, logpclass_test)
+logpclass_test = np.where(logp_test > 1.5, 1, logpclass_test)
+print ('logp_test', logp_test)
+print ('logpclass_test', logpclass_test)
+group_names = np.array (["logp < 1.5", "logp > 1.5"])
+target_ids = range(0,2)
+colors = ['red', 'blue']
+# tsne1 vs. tsne2 atoms test
+plt.close()
+rc('font', weight='bold')
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.tick_params(axis='both', which='major', labelsize=20)
+mpl.rcParams['axes.linewidth'] = 3.5
+for i, c, label in zip(target_ids, colors, group_names):
+    plt.scatter(X_atoms_test_tsne[logpclass_test == i, 0],
+                X_atoms_test_tsne[logpclass_test == i, 1],
+                c=c, label=label)
+plt.legend(fontsize=12)
+ax.tick_params(width=2, length=4)
+plt.xlabel('t-SNE1', fontsize=25, fontweight='bold')
+plt.ylabel('t-SNE2', fontsize=25, fontweight='bold')
+plt.savefig("test_atom_dist_tsne_logp.png", bbox_inches='tight', dpi=300)

@@ -402,11 +402,11 @@ combined = build_combined(z, y,
 # loading pretrained models
 #regressor = load_model    ('./../data/nns_9HA_noemb_6b6/regressor.h5')
 #regressor_top = load_model('./../data/nns_9HA_noemb_6b6/regressor_top.h5')
-generator = load_model    ('./../data/nns_9HA_noemb_6b6/keep_yxie/generator_new.h5')
-discriminator= load_model ('./../data/nns_9HA_noemb_6b6/keep_yxie/discriminator_new.h5')
+#generator = load_model    ('./../data/nns_9HA_noemb_6b6/keep/generator.h5')
+#discriminator= load_model ('./../data/nns_9HA_noemb_6b6/keep/discriminator.h5')
 #generator.load_weights('./../data/nns_9HA_noemb_6b6/keep/generator.h5')
 #discriminator.load_weights('./../data/nns_9HA_noemb_6b6/keep/discriminator.h5')
-"""
+
 regressor_top.trainable = False
 regressor.trainable = False
 
@@ -667,7 +667,7 @@ with open('GAN_loss.pickle', 'wb') as f:
 #regressor_top.save('regressor_top.h5')
 generator.save('./../data/nns_9HA_noemb_6b6/generator_newfinal.h5')
 discriminator.save('./../data/nns_9HA_noemb_6b6/discriminator_newfinal.h5')
-"""
+
 ##====#
 
 # Generation Study
