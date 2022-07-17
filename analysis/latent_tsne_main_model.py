@@ -129,10 +129,10 @@ print ('X_smiles_train shape: ', X_smiles_train.shape)
 print ('X_smiles_test shape: ', X_smiles_val.shape)
 #print ('last SMILES train: ', SMILES_train[-1])
 
-## Outlier removal 1.5*IQR rule
+## Outlier removal 2*IQR rule
 # Train samples
 IQR = - np.quantile(y_train0, 0.25) + np.quantile(y_train0, 0.75)
-lower_bound, upper_bound = np.quantile(y_train0, 0.25) - 1.5 * IQR, np.quantile(y_train0, 0.75) + 1.5 * IQR
+lower_bound, upper_bound = np.quantile(y_train0, 0.25) - 2 * IQR, np.quantile(y_train0, 0.75) + 2 * IQR
 idx = np.where((y_train0 >= lower_bound) & (y_train0 <= upper_bound))
 
 y_train = y_train0[idx]
@@ -142,7 +142,7 @@ X_bonds_train = X_bonds_train[idx]
 
 # Test samples
 IQR = - np.quantile(y_val0, 0.25) + np.quantile(y_val0, 0.75)
-lower_bound, upper_bound = np.quantile(y_val0, 0.25) - 1.5 * IQR, np.quantile(y_val0, 0.75) + 1.5 * IQR
+lower_bound, upper_bound = np.quantile(y_val0, 0.25) - 2 * IQR, np.quantile(y_val0, 0.75) + 2 * IQR
 idx = np.where((y_val0 >= lower_bound) & (y_val0 <= upper_bound))
 
 y_val = y_val0[idx]
@@ -394,7 +394,7 @@ print ("quantile of train samples: ", Qs)
 # 4 classes: same # samples
 y_class_val = np.where(preds <= (Qs_gen[1]+Qs_gen[2])/2, 0, y_class_val)
 y_class_val = np.where((preds > (Qs_gen[1]+Qs_gen[2])/2) & (preds <= Qs_gen[4]), 1, y_class_val)
-y_class_val = np.where((preds> Qs_gen[4]) & (preds <= (Qs_gen[6]+Qs_gen[7])/2), 2, y_class_val)
+y_class_val = np.where((preds > Qs_gen[4]) & (preds <= (Qs_gen[6]+Qs_gen[7])/2), 2, y_class_val)
 y_class_val = np.where(preds > (Qs_gen[6]+Qs_gen[7])/2, 3, y_class_val)
 
 # 4 classes
@@ -542,13 +542,11 @@ group_names = np.array(["Cv<{}".format(np.round((Qs[1]+Qs[2])/2)),
                             "{}<Cv<{}".format(np.round((Qs[1]+Qs[2])/2), np.round(Qs[4])),
                             "{}<Cv<{}".format(np.round(Qs[4]), np.round((Qs[6]+Qs[7])/2)),
                             "{}<Cv".format(np.round((Qs[6]+Qs[7])/2))])
-group_names_gen = group_names
-"""
-group_names_gen = np.array(["Cv<{}".format(np.round(Qs_gen[2])), 
-                            "{}<Cv<{}".format(np.round(Qs_gen[2]), np.round(Qs_gen[5])),
-                            "{}<Cv<{}".format(np.round(Qs_gen[5]), np.round(Qs_gen[7])),
-                            "{}<Cv".format(np.round(Qs_gen[7]))])
-"""
+#group_names_gen = group_names
+group_names_gen = np.array(["Cv<{}".format(np.round((Qs_gen[1]+Qs_gen[2])/2)),
+                            "{}<Cv<{}".format(np.round((Qs_gen[1]+Qs_gen[2])/2), np.round(Qs_gen[4])),
+                            "{}<Cv<{}".format(np.round(Qs_gen[4]), np.round((Qs_gen[6]+Qs_gen[7])/2)),
+                            "{}<Cv".format(np.round((Qs_gen[6]+Qs_gen[7])/2))])
 
 target_ids = range(0, 4)
 # pc1 vs. pc2 concat 
@@ -558,13 +556,29 @@ pca_2 = PCA(n_components = 3)
 X_concat_train_pca = pca_2.fit_transform(X_Concat_train)
 X_concat_test_pca = pca_2.transform(X_Concat_test)
 
+
 plt.close()
 fig, ax = plt.subplots(figsize =(10, 5))
 ax.tick_params(axis='both', which='major', labelsize=20)
 mpl.rcParams['axes.linewidth'] = 3.5
 for i, c, label in zip(target_ids, colors, group_names):
-            plt.scatter(X_concat_test_pca[y_class_val == i, 0], 
-                        X_concat_test_pca[y_class_val == i, 1], 
+            plt.scatter(X_concat_train_pca[y_class == i, 0],
+                        X_concat_train_pca[y_class == i, 1],
+                        alpha=0.5, c=c, label=label)
+plt.legend(fontsize=12)
+ax.tick_params(width=2, length=4)
+plt.xlabel('PC1', fontsize=25, fontweight='bold')
+plt.ylabel('PC2', fontsize=25, fontweight='bold')
+plt.savefig("train_conc_dist_pca.png", bbox_inches='tight', dpi=300)
+
+
+plt.close()
+fig, ax = plt.subplots(figsize =(10, 5))
+ax.tick_params(axis='both', which='major', labelsize=20)
+mpl.rcParams['axes.linewidth'] = 3.5
+for i, c, label in zip(target_ids, colors, group_names_gen):
+            plt.scatter(X_concat_test_pca[y_class_val == i, 0],
+                        X_concat_test_pca[y_class_val == i, 1],
                         alpha=0.5, c=c, label=label)
 plt.legend(fontsize=12)
 ax.tick_params(width=2, length=4)
@@ -586,158 +600,152 @@ plt.xlabel('PC1', fontsize=25, fontweight='bold')
 plt.ylabel('PC2', fontsize=25, fontweight='bold')
 plt.savefig("train_conc_dist_pca.png", bbox_inches='tight', dpi=300)
 
+
 perplexities = [20, 30, 40, 45, 50, 60, 100, 120]
 perplexities = [40, 45, 50]
-seeds = [100]
+seed = 100
 pbar = ProgressBar()
 
 n_iter = 10000
-for i, p in enumerate(seeds):
-	print ('perplexity {}, {}th from total of {}'.format(p, i+1,len(seeds)))
-	### t-SNE Atoms Distribution ###
-	"""
-	X_atoms_train_tsne = TSNE(verbose=1, learning_rate='auto', n_iter=n_iter, n_components=2,   perplexity=p, 
-				  init='pca').fit_transform(X_atoms_train_)
-	X_atoms_test_tsne =  TSNE(verbose=1, learning_rate='auto', n_iter=n_iter, n_components=2,   perplexity=p,
-				  init='pca').fit_transform(X_atoms_test_)
 
-	# tsne1 vs. tsne2 atoms train
-	plt.close()
-	rc('font', weight='bold')
-	fig, ax = plt.subplots(figsize=(10, 6))
-	ax.tick_params(axis='both', which='major', labelsize=20)
-	mpl.rcParams['axes.linewidth'] = 3.5
-	for i, c, label in zip(target_ids, colors, group_names):
-	    plt.scatter(X_atoms_train_tsne[y_class == i, 0], 
-			X_atoms_train_tsne[y_class == i, 1], 
-			c=c, label=label, alpha=1)
-	plt.legend(fontsize=12)
-	ax.tick_params(width=2, length=4)
-	plt.xlabel('t-SNE1', fontsize=25, fontweight='bold')
-	plt.ylabel('t-SNE2', fontsize=25, fontweight='bold')
-	plt.savefig("train_atom_dist_tsne_p{}.png".format(p), bbox_inches='tight', dpi=300)
+### concat. latent vectors ###
+X_Concat_train =  np.concatenate ([X_bonds_train_, X_atoms_train_], axis=1)
+X_Concat_test  =  np.concatenate ([X_bonds_test_, X_atoms_test_], axis=1)
+pca_2 = PCA(n_components=3)
+X_concat_train_pca = pca_2.fit_transform(X_Concat_train)
+X_concat_test_pca = pca_2.transform(X_Concat_test)
 
-	# tsne1 vs. tsne2 atoms gen.
-	plt.close()
-	fig, ax = plt.subplots(figsize =(10, 6))
-	ax.tick_params(axis='both', which='major', labelsize=20)
-	mpl.rcParams['axes.linewidth'] = 3.5
-	for i, c, label in zip(target_ids, colors, group_names_gen):
-	    plt.scatter(X_atoms_test_tsne[y_class_val == i, 0], 
-			X_atoms_test_tsne[y_class_val == i, 1], 
-			c=c, label=label, alpha=1)
-	plt.legend(fontsize=12)
-	ax.tick_params(width=2, length=4)
-	plt.xlabel('t-SNE1', fontsize=25, fontweight='bold')
-	plt.ylabel('t-SNE2', fontsize=25, fontweight='bold')
-	plt.savefig("gen_atom_dist_tsne_p{}.png".format(p), bbox_inches='tight', dpi=300)
-
-
-
-	### t-SNE bonds distribution ###
-	X_bonds_train_tsne = TSNE(verbose=1, learning_rate='auto', n_iter=n_iter, n_components=2,   perplexity=p,
-				  init='pca').fit_transform(X_bonds_train_)
-	X_bonds_test_tsne = TSNE(verbose=1, learning_rate='auto', n_iter=n_iter, n_components=2,   perplexity=p,
-				  init='pca').fit_transform(X_bonds_test_)
-
-	# tsne1 vs. tsne2 bond train
-	plt.close()
-	fig, ax = plt.subplots(figsize =(10, 5))
-	ax.tick_params(axis='both', which='major', labelsize=20)
-	mpl.rcParams['axes.linewidth'] = 3.5
-	for i, c, label in zip(target_ids, colors, group_names):
-	    plt.scatter(X_bonds_train_tsne[y_class == i, 0], 
-			X_bonds_train_tsne[y_class == i, 1], 
-			alpha=1, c=c, label=label)
-	plt.legend(fontsize=12)
-	ax.tick_params(width=2, length=4)
-	plt.xlabel('t-SNE1', fontsize=25, fontweight='bold')
-	plt.ylabel('t_SNE2', fontsize=25, fontweight='bold')
-	plt.savefig("train_bonds_dist_tsne_p{}.png".format(p), bbox_inches='tight', dpi=300)
-
-
-	# tsne1 vs. tsne2 gen.
-	plt.close()
-	fig, ax = plt.subplots(figsize =(10, 5))
-	ax.tick_params(axis='both', which='major', labelsize=20)
-	mpl.rcParams['axes.linewidth'] = 3.5
-	for i, c, label in zip(target_ids, colors, group_names_gen):
-	    plt.scatter(X_bonds_test_tsne[y_class_val == i, 0], 
-			X_bonds_test_tsne[y_class_val == i, 1], 
-			alpha=1, c=c, label=label)
-	plt.legend(fontsize=12)
-	ax.tick_params(width=2, length=4)
-	plt.xlabel('t-SNE1', fontsize=25, fontweight='bold')
-	plt.ylabel('t_SNE2', fontsize=25, fontweight='bold')
-	plt.savefig("gen_bonds_dist_tsne_p{}.png".format(p), bbox_inches='tight', dpi=300)
-	"""
-
-	### concat. latent vectors ###
-	X_Concat_train =  np.concatenate ([X_bonds_train_, X_atoms_train_], axis=1)
-	X_Concat_test  =  np.concatenate ([X_bonds_test_, X_atoms_test_], axis=1)
-	pca_2 = PCA(n_components=3)
-	X_concat_train_pca = pca_2.fit_transform(X_Concat_train)
-	X_concat_test_pca = pca_2.transform(X_Concat_test)
-
-	### tsne of combined atom and bond matrices ###
-	X_Concat_train_tsne = TSNE(verbose=1, learning_rate=100, min_grad_norm=1e-50,
-				   n_iter=n_iter, n_components=2,   perplexity=50, random_state=100, angle=0.5, square_distances=True,
+### tsne of combined atom and bond matrices ###
+X_Concat_train_tsne = TSNE(verbose=1, learning_rate=100, min_grad_norm=1e-50,
+				   n_iter=n_iter, n_components=2, perplexity=50, 
+                                   random_state=100, angle=0.5, square_distances=True,
 				  init='pca').fit_transform(X_concat_train_pca)
-	X_Concat_test_tsne = TSNE(verbose=1, learning_rate=100, n_iter=n_iter, min_grad_norm=1e-50,
-				  n_components=2,   perplexity=50, random_state=100, angle=0.5, n_jobs=-1, square_distances=True,  
-				  init='pca').fit_transform(X_concat_test_pca)
+X_Concat_test_tsne = TSNE(verbose=1, learning_rate=100, n_iter=n_iter, min_grad_norm=1e-50,
+		          n_components=2,   perplexity=50, random_state=100, angle=0.5, n_jobs=-1, square_distances=True,  
+		          init='pca').fit_transform(X_concat_test_pca)
+	
+###
+"""
+# using .pickle to save mapped vectors	
+with open('./TSNE_variables.pickle', 'wb') as f:
+		pickle.dump((X_Concat_train_tsne, X_Concat_test_tsne), f)
+	
+with open('./TSNE_variables.pickle', 'rb') as f:
+		X_Concat_train_tsne, X_Concat_test_tsne = pickle.load(f)
+"""
 
-	# tsne1 vs. tsne 2 train
-	plt.close()
-	fig, ax = plt.subplots(figsize=(10, 5))
-	ax.tick_params(axis='both', which='major', labelsize=20)
-	mpl.rcParams['axes.linewidth'] = 3.5
-	for i, c, label in zip(target_ids, colors, group_names):
+# using .csv file to save mapped vectors
+tsne_components = pd.DataFrame()
+tsne_components['SMILES'] = SMILES_gantrain
+tsne_components['cv'] = y_train
+tsne_components['class'] = y_class
+tsne_components['train_tsne1'] = np.array (X_Concat_train_tsne)[:, 0]
+tsne_components['train_tsne2'] = np.array (X_Concat_train_tsne)[:, 1]
+tsne_components.to_csv('./TSNE_variables_train.csv')
+
+tsne_components = pd.DataFrame()
+tsne_components['SMILES'] = gen_smiles
+tsne_components['pred_cv'] = preds
+tsne_components['class'] = y_class_val
+tsne_components['test_tsne1'] = np.array (X_Concat_test_tsne)[:, 0]
+tsne_components['test_tsne2'] = np.array (X_Concat_test_tsne)[:, 1]
+tsne_components.to_csv('./TSNE_variables_test.csv')
+
+
+tsne_components = pd.read_csv('./TSNE_variables_train.csv')
+X_Concat_train_tsne1 = np.array (tsne_components['train_tsne1'])
+X_Concat_train_tsne2 = np.array (tsne_components['train_tsne2'])
+
+tsne_components = pd.read_csv('./TSNE_variables_test.csv')
+X_Concat_test_tsne1 = np.array (tsne_components['test_tsne1'])
+X_Concat_test_tsne2 = np.array (tsne_components['test_tsne2'])
+
+X_Concat_train_tsne = np.vstack ((X_Concat_train_tsne1, X_Concat_train_tsne2))
+print ('train tsne', X_Concat_train_tsne.shape)
+X_Concat_test_tsne = np.vstack ((X_Concat_test_tsne1, X_Concat_test_tsne2))
+print ('test tsne', X_Concat_test_tsne.shape)
+# tsne1 vs. tsne 2 train
+X_Concat_train_tsne = X_Concat_train_tsne.T
+X_Concat_test_tsne = X_Concat_test_tsne.T
+plt.close()
+fig, ax = plt.subplots(figsize=(10, 10))
+ax.tick_params(axis='both', which='major', labelsize=20)
+mpl.rcParams['axes.linewidth'] = 3.5
+for i, c, label in zip(target_ids, colors, group_names):
 	    plt.scatter(X_Concat_train_tsne[y_class == i, 0], 
 			X_Concat_train_tsne[y_class == i, 1], 
-			alpha=1, c=c, label=label)
-	plt.legend(fontsize=12, bbox_to_anchor=(0, 2))
-	ax.tick_params(width=2, length=4)
-	plt.xlabel('t-SNE1', fontsize=25, fontweight='bold')
-	plt.ylabel('t_SNE2', fontsize=25, fontweight='bold')
-	plt.savefig("train_concat_dist_tsne_p50s{}.png".format(p), bbox_inches='tight', dpi=300)
+			alpha=1, c=c, label=label)	
+plt.xlim(-50, 50)
+plt.ylim(-50, 50)
+id_sample = 13
+class_sample = 0
+plt.scatter(X_Concat_train_tsne[y_class == class_sample, 0][id_sample],
+                        X_Concat_train_tsne[y_class == class_sample, 1][id_sample],
+                        alpha=1, c='black', marker='X', s=30)
+print ('train SMILES from class {} and id {}'.format(class_sample, id_sample), 
+		SMILES_gantrain[y_class == class_sample][id_sample])
+print ('train Cv from class {} and id {}'.format(class_sample, id_sample),
+		y_train [y_class == class_sample][id_sample])
+
+#plt.legend(fontsize=12, bbox_to_anchor=(0, 2))
+ax.tick_params(width=2, length=4)
+plt.xlabel('t-SNE1', fontsize=25, fontweight='bold')
+plt.ylabel('t_SNE2', fontsize=25, fontweight='bold')
+plt.savefig("train_concat_dist_tsne_p50s100.png", bbox_inches='tight', dpi=300)
 
 
-	# tsne1 vs. tsne2 gen.
-	plt.close()
-	fig, ax = plt.subplots(figsize =(10, 5))
-	ax.tick_params(axis='both', which='major', labelsize=20)
-	mpl.rcParams['axes.linewidth'] = 3.5
-	for i, c, label in zip(target_ids, colors, group_names_gen):
+# tsne1 vs. tsne2 gen.
+plt.close()
+fig, ax = plt.subplots(figsize =(10, 10))
+ax.tick_params(axis='both', which='major', labelsize=20)
+mpl.rcParams['axes.linewidth'] = 3.5
+for i, c, label in zip(target_ids, colors, group_names_gen):
 	    plt.scatter(X_Concat_test_tsne[y_class_val == i, 0], 
 			X_Concat_test_tsne[y_class_val == i, 1], 
 			alpha=1, c=c, label=label)
-        # left cluster
-	plt.scatter(X_Concat_test_tsne[y_class_val == 3, 0][20],
+"""
+# left cluster
+plt.scatter(X_Concat_test_tsne[y_class_val == 3, 0][20],
                         X_Concat_test_tsne[y_class_val == 3, 1][20],
                         alpha=1, c='yellow', marker='*', s=30)
-	# left cluster
-	plt.scatter(X_Concat_test_tsne[y_class_val == 3, 0][0],
+# left cluster
+plt.scatter(X_Concat_test_tsne[y_class_val == 3, 0][0],
                         X_Concat_test_tsne[y_class_val == 3, 1][0],
                         alpha=1, c='green', marker='*', s=30)
-	# right, blue boundary
-	plt.scatter(X_Concat_test_tsne[y_class_val == 3, 0][10],
+# right, blue boundary
+plt.scatter(X_Concat_test_tsne[y_class_val == 3, 0][10],
                         X_Concat_test_tsne[y_class_val == 3, 1][10],
                         alpha=1, c='black', marker='*', s=30)
-	# left cluster
-	plt.scatter(X_Concat_test_tsne[y_class_val == 3, 0][150],
+# left cluster
+plt.scatter(X_Concat_test_tsne[y_class_val == 3, 0][150],
                         X_Concat_test_tsne[y_class_val == 3, 1][150],
                         alpha=1, c='green', marker='x', s=30)
-	# left cluster
-	plt.scatter(X_Concat_test_tsne[y_class_val == 3, 0][160],
+# left cluster
+plt.scatter(X_Concat_test_tsne[y_class_val == 3, 0][160],
                         X_Concat_test_tsne[y_class_val == 3, 1][160],
                         alpha=1, c='black', marker='X', s=30)
-
-	plt.legend(fontsize=12, bbox_to_anchor=(0, 2))
-	ax.tick_params(width=2, length=4)
-	plt.xlabel('t-SNE1', fontsize=25, fontweight='bold')
-	plt.ylabel('t_SNE2', fontsize=25, fontweight='bold')
-	plt.savefig("gen_Concat_dist_tsne_p50s{}.png".format(p), bbox_inches='tight', dpi=300)
+"""
+"""
+id_sample = 28
+class_sample = 0
+plt.scatter(X_Concat_test_tsne[y_class_val == class_sample, 0][id_sample],
+		X_Concat_test_tsne[y_class_val == class_sample, 1][id_sample],	
+		alpha=1, c='black', marker='X', s=30)
+gen_smiles = np.array(gen_smiles)
+preds = np.array(preds)
+print ('test SMILES from class {} and id {}'.format(class_sample, id_sample),
+		gen_smiles[y_class_val == class_sample][id_sample])
+print ('test Cv from class {} and id {}'.format(class_sample, id_sample),
+                preds [y_class_val == class_sample][id_sample])
+"""
+#plt.legend(fontsize=12, bbox_to_anchor=(0, 2))
+#plt.legend(fontsize=12)
+plt.xlim(-55, 55)
+plt.ylim(-40, 40)
+ax.tick_params(width=2, length=4)
+plt.xlabel('t-SNE1', fontsize=25, fontweight='bold')
+plt.ylabel('t_SNE2', fontsize=25, fontweight='bold')
+plt.savefig("gen_Concat_dist_tsne_p50s100.png", bbox_inches='tight', dpi=300)
 
 
 logp_train = []
@@ -752,11 +760,11 @@ for s in gen_smiles:
 
 logp_train = np.array(logp_train)
 logpclass_train = logp_train
-logpclass_train = np.where(logp_train <= 1.5, 0, logpclass_train)
-logpclass_train = np.where(logp_train > 1.5, 1, logpclass_train)
+logpclass_train = np.where(logp_train <= 2, 0, logpclass_train)
+logpclass_train = np.where(logp_train > 2, 1, logpclass_train)
 print ('logptrain', logp_train)
 print ('logpclass_train', logpclass_train)
-group_names = np.array (["logp < 1.5", "logp > 1.5"])
+group_names = np.array (["logp < 2", "logp > 2"])
 target_ids = range(0,2)
 colors = ['red', 'blue']
 # tsne1 vs. tsne2 atoms train
@@ -766,8 +774,8 @@ fig, ax = plt.subplots(figsize=(10, 6))
 ax.tick_params(axis='both', which='major', labelsize=20)
 mpl.rcParams['axes.linewidth'] = 3.5
 for i, c, label in zip(target_ids, colors, group_names):
-    plt.scatter(X_atoms_train_tsne[logpclass_train == i, 0], 
-                X_atoms_train_tsne[logpclass_train == i, 1], 
+    plt.scatter(X_Concat_train_tsne[logpclass_train == i, 0], 
+                X_Concat_train_tsne[logpclass_train == i, 1], 
                 c=c, label=label)
 plt.legend(fontsize=12)
 ax.tick_params(width=2, length=4)
@@ -777,11 +785,11 @@ plt.savefig("train_atom_dist_tsne_logp.png", bbox_inches='tight', dpi=300)
 
 logp_test = np.array(logp_test)
 logpclass_test = logp_test
-logpclass_test = np.where(logp_test <= 1.5, 0, logpclass_test)
-logpclass_test = np.where(logp_test > 1.5, 1, logpclass_test)
+logpclass_test = np.where(logp_test <= 2, 0, logpclass_test)
+logpclass_test = np.where(logp_test > 2, 1, logpclass_test)
 print ('logp_test', logp_test)
 print ('logpclass_test', logpclass_test)
-group_names = np.array (["logp < 1.5", "logp > 1.5"])
+group_names = np.array (["logp < 2", "logp > 2"])
 target_ids = range(0,2)
 colors = ['red', 'blue']
 # tsne1 vs. tsne2 atoms test
@@ -791,8 +799,8 @@ fig, ax = plt.subplots(figsize=(10, 6))
 ax.tick_params(axis='both', which='major', labelsize=20)
 mpl.rcParams['axes.linewidth'] = 3.5
 for i, c, label in zip(target_ids, colors, group_names):
-    plt.scatter(X_atoms_test_tsne[logpclass_test == i, 0],
-                X_atoms_test_tsne[logpclass_test == i, 1],
+    plt.scatter(X_Concat_test_tsne[logpclass_test == i, 0],
+                X_Concat_test_tsne[logpclass_test == i, 1],
                 c=c, label=label)
 plt.legend(fontsize=12)
 ax.tick_params(width=2, length=4)

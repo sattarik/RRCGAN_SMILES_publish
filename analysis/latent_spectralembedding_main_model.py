@@ -567,7 +567,7 @@ for i, c, label in zip(target_ids, colors, group_names):
             plt.scatter(X_concat_test_pca[y_class_val == i, 0], 
                         X_concat_test_pca[y_class_val == i, 1], 
                         alpha=0.5, c=c, label=label)
-plt.legend(fontsize=12)
+#plt.legend(fontsize=12)
 ax.tick_params(width=2, length=4)
 plt.xlabel('PC1', fontsize=25, fontweight='bold')
 plt.ylabel('PC2', fontsize=25, fontweight='bold')
@@ -581,7 +581,7 @@ for i, c, label in zip(target_ids, colors, group_names):
             plt.scatter(X_concat_train_pca[y_class == i, 0],
                         X_concat_train_pca[y_class == i, 1],
                         alpha=0.5, c=c, label=label)
-plt.legend(fontsize=12)
+#plt.legend(fontsize=12)
 ax.tick_params(width=2, length=4)
 plt.xlabel('PC1', fontsize=25, fontweight='bold')
 plt.ylabel('PC2', fontsize=25, fontweight='bold')
@@ -604,10 +604,10 @@ for i, c, label in zip(target_ids, colors, group_names):
             plt.scatter(X_concat_test_SpectralEmbedding[y_class_val == i, 0],
                         X_concat_test_SpectralEmbedding[y_class_val == i, 1],
                         alpha=0.5, c=c, label=label)
-plt.legend(fontsize=12)
+#plt.legend(fontsize=12)
 ax.tick_params(width=2, length=4)
-plt.xlabel('SpectralEmbedding1', fontsize=25, fontweight='bold')
-plt.ylabel('SpectralEmbedding2', fontsize=25, fontweight='bold')
+plt.xlabel('Spec. Emb. 1', fontsize=25, fontweight='bold')
+plt.ylabel('Spec. Emb. 2', fontsize=25, fontweight='bold')
 plt.savefig("test_conc_dist_SpectralEmbedding.png", bbox_inches='tight', dpi=300)
 
 
@@ -619,8 +619,8 @@ for i, c, label in zip(target_ids, colors, group_names):
             plt.scatter(X_concat_train_SpectralEmbedding[y_class == i, 0],
                         X_concat_train_SpectralEmbedding[y_class == i, 1],
                         alpha=0.5, c=c, label=label)
-plt.legend(fontsize=12)
+#plt.legend(fontsize=12)
 ax.tick_params(width=2, length=4)
-plt.xlabel('SpectralEmbedding1', fontsize=25, fontweight='bold')
-plt.ylabel('SpectralEmbedding2', fontsize=25, fontweight='bold')
+plt.xlabel('Spec. Emb. 1', fontsize=25, fontweight='bold')
+plt.ylabel('Spec. Emb. 2', fontsize=25, fontweight='bold')
 plt.savefig("train_conc_dist_SpectralEmbedding.png", bbox_inches='tight', dpi=300)
